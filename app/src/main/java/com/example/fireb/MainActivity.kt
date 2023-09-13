@@ -13,7 +13,6 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
-import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.ActionBarDrawerToggle
 import com.example.fireb.Models.WeatherModel
@@ -27,7 +26,6 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.GravityCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import retrofit2.Call
@@ -68,13 +66,14 @@ class MainActivity : AppCompatActivity() {
         toggle = ActionBarDrawerToggle(this, binding.drawerLayout, R.string.open, R.string.close)
         binding.drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
+
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         auth = FirebaseAuth.getInstance()
 
         fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
         getCurrentLocation()
-        binding.citySearch.setOnEditorActionListener { _, i, _ ->
+        binding.citySearch.setOnEditorActionListener { textView, i, keyEvent ->
             if (i == EditorInfo.IME_ACTION_SEARCH) {
                 getCityWeather(binding.citySearch.text.toString())
                 val view = this.currentFocus
@@ -116,6 +115,11 @@ class MainActivity : AppCompatActivity() {
 
         binding.navView.setNavigationItemSelectedListener {
             when (it.itemId) {
+                R.id.miProfile -> {
+                    val intent = Intent(applicationContext, Profile::class.java)
+                    startActivity(intent)
+                }
+
                 R.id.miPayment -> {
                     val intent = Intent(applicationContext, Payment::class.java)
                     startActivity(intent)
@@ -146,7 +150,7 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(applicationContext, SignUp::class.java))
                 }
             }
-            return@setNavigationItemSelectedListener true
+            true
         }
     }
 
@@ -287,7 +291,7 @@ class MainActivity : AppCompatActivity() {
         binding.apply {
             val currentDate = SimpleDateFormat("dd/MM/yyyy hh:mm").format(Date())
             dateTime.text = currentDate.toString()
-            maxTemp.text = "Max " + k2c(body.main.feels_like) + "°"
+            maxTemp.text = "Max " + k2c(body.main.temp_max) + "°"
             minTemp.text = "Min " + k2c(body.main.temp_min) + "°"
             temp.text = "" + k2c(body.main.temp) + "°"
             weatherTitle.text = body.weather[0].main
@@ -395,18 +399,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return if(toggle.onOptionsItemSelected(item)){
-            true
-        }else
-            super.onOptionsItemSelected(item)
+    override fun onContextItemSelected(item: MenuItem): Boolean {
+        if (toggle.onOptionsItemSelected(item)) {
+            return true
+        }
+        return super.onContextItemSelected(item)
     }
+
     @Deprecated("Deprecated in Java")
       override fun onBackPressed() {
-        if (binding.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            binding.drawerLayout.close()
-        } else
-            super.onBackPressed()
-    }
+         if (doubleBackToExitPressedOnce) {
+             super.onBackPressed()
+             return
+         }
+    Toast.makeText(this, "Press back again to exit", Toast.LENGTH_SHORT).show()
+    Handler().postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+   }
 }
